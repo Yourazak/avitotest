@@ -34,6 +34,7 @@ func generateRandomPassword(n int) string {
 	}
 	return string(b)
 }
+
 func rangeOfRandom(min, max int) int {
 	return rand.IntN(max-min+1) + min
 }

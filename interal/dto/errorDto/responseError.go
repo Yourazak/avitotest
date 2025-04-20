@@ -1,9 +1,47 @@
 package errorDto
 
-type ResponsError struct {
+import (
+	"avitotes/pkg/req"
+	"net/http"
+)
+
+type ResponseError struct {
 	Message string `json:"message"`
 }
 
-func NewResponsError(message string, err error) *ResponsError {
-	return &ResponsError{message + ": " + err.Error()}
+func NewResponseError(message string, err error) *ResponseError {
+	if len(err) == 0 {
+		return &ResponseError{message}
+	}
+	if len(err) == 1 {
+		return &ResponseError{message + "; " + err[0].Error()}
+	}
+	return nil
+}
+
+func ShowResponseError(w *http.ResponseWriter, msg string, args ...interface{}) {
+	var respErr *ResponseError
+	var statusCode int
+
+	if len(args) == 1 {
+		//ShowResponse(w, statusCode)
+		if code, err := args[0].(int); ok {
+			respErr = NewResponseError(msg)
+			statusCode = code
+		}
+	} else if len(args) == 2 {
+		//ShowResponse(w, msg,StatusCode,err)
+		if code, ok := args[0].int; ok {
+			if err, ok := args[1].(error); ok {
+				respErr = NewResponseError(msg, err)
+				statusCode = code
+			}
+		}
+	}
+	if respErr == nil {
+		respErr = NewResponseError("Internal server error")
+		statusCode = http.StatusInternalServerError
+	}
+	(*w).WriteHeader(statusCode)
+	req.JsonResponse(w, respErr)
 }

@@ -62,6 +62,9 @@ func (UserHandler *UserHandler) GetTokenByRole() http.HandlerFunc {
 			log.Println("GetTokenByRole", err)
 			return
 		}
+		tokenFormatJson := &payload.TokenResponse{
+			Token: tokenStr,
+		}
 		req.JsonResponse(&w, &tokenStr)
 	}
 }
@@ -74,5 +77,6 @@ func NewUserHandler(router *http.ServeMux, userHandlerDep *UserHandlerDependency
 	router.HandleFunc("POST /register", userHandler.CreateUser())
 	router.HandleFunc("POST /login", userHandler.AuthenticateUser())
 	router.HandleFunc("POST /dummyLogin", userHandler.GetTokenByRole())
+
 	return userHandler
 }
