@@ -4,6 +4,7 @@ import (
 	"avitotes/config"
 	"avitotes/interal/dto/errorDto"
 	"avitotes/interal/dto/payloadError"
+	"avitotes/pkg/midware"
 	"avitotes/pkg/req"
 	"net/http"
 )
@@ -42,6 +43,6 @@ func NewPvzHandler(router *http.ServeMux, pvz *PvzHandlerDependency) *PvzHandler
 		pvz.Config,
 	}
 
-	router.Handle("POST /pvz", midware.CheckRoleByToken(pvzhandler.CreatePVZ(), "TOKEN_MODERATOR"))
+	router.Handle("POST /pvz", midware.CheckRoleByToken(pvzHandler.CreatePVZ(), "TOKEN_MODERATOR"))
 	return pvzHandler
 }

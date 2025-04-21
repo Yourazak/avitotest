@@ -3,8 +3,8 @@ package server
 import (
 	"avitotes/config"
 	"avitotes/interal/pvz"
+	"avitotes/interal/reception"
 	"avitotes/interal/users"
-	"avitotes/pkg/repos"
 	"net/http"
 )
 
@@ -14,10 +14,13 @@ func ServerStart(conf *config.Config, resp *users.UserRepo) {
 	router := http.NewServeMux()
 
 	//подключаем к router ручки для User
-	ConnectHandlerForUser(router, conf, repos.UserRepo)
+	ConnectHandlerForUser(router, conf, reps.UserRepo)
 
 	//подключаем к router ручки для PVZ
 	ConnectHandlerForPvz(router, conf, reps.PvzRepo)
+
+	//подключаем к ruoter ручки для Reception
+	ConnectHandlerForReception(router, conf, reps.ReceptionRepo)
 
 	//передаем server наши ручки
 	server := http.Server{
@@ -27,6 +30,20 @@ func ServerStart(conf *config.Config, resp *users.UserRepo) {
 
 	//запускаем server
 	server.ListenAndServe()
+}
+
+func ConnectHandlerForReception(router *http.ServeMux, conf *config.Config, reps *pvzReceptionRepo) {
+	//подключаем сторонние service
+	receptionService := reception.NewReceptionService(reps, conf)
+
+	//подключаем receptionHandDependency для Reception
+	receptionHandDepend := reception.ReceptionHandlerDependency{
+		receptionService,
+		conf,
+	}
+
+	//подключаем ручки для Reception к router
+	receptions.NewReceptionHandler(router, &receptionHandDepend)
 }
 
 func ConnectHandlerForPvz(router *http.ServeMux, conf *config.Config, reps *pvz.PVZRepo) {

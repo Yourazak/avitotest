@@ -13,7 +13,7 @@ type PVZ struct {
 
 func NewPVZ(Id uuid.UUID, RegistrationDate time.Time, City string) *PVZ {
 	return &PVZ{
-		ID:               id,
+		ID:               Id,
 		RegistrationDate: RegistrationDate,
 		City:             City,
 	}
