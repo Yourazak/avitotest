@@ -2,19 +2,19 @@ package users
 
 import (
 	"avitotes/config"
-	"avitotes/interal/dto/payloadError"
+	"avitotes/internal/dto/payload"
 	"avitotes/pkg/req"
 	"log"
 	"net/http"
 )
 
 type UserHandlerDependency struct {
-	*UserService
+	UserService UserService
 	*config.Config
 }
 
 type UserHandler struct {
-	*UserService
+	UserService UserService
 	*config.Config
 }
 
@@ -22,10 +22,10 @@ func (userHandler *UserHandler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := req.HandleBody[payload.UserCreateRequest](&w, r)
 		if err != nil {
-			log.Println("CreateUser:функция HandleBody вернула nil", err)
+			log.Println("CreateUser: функция HandleBody вернула nil", err)
 			return
 		}
-		createdUser, err := userHandler.Register(body.Email, body.Password, body.Role)
+		createdUser, err := userHandler.UserService.Register(r.Context(), body.Email, body.Password, body.Role)
 		if err != nil {
 			log.Println("CreateUser: не удалось создать пользователя")
 			return
@@ -41,7 +41,7 @@ func (userHandler *UserHandler) AuthenticateUser() http.HandlerFunc {
 			log.Println("AuthenticateUser: функция HandleBody вернула nil", err)
 			return
 		}
-		jwtPoint, err := userHandler.Login(body.Email, body.Password)
+		jwtPoint, err := userHandler.UserService.Login(r.Context(), body.Email, body.Password)
 		if err != nil {
 			log.Println("AuthenticateUser", err)
 			return
@@ -50,14 +50,14 @@ func (userHandler *UserHandler) AuthenticateUser() http.HandlerFunc {
 	}
 }
 
-func (UserHandler *UserHandler) GetTokenByRole() http.HandlerFunc {
+func (userHandler *UserHandler) GetTokenByRole() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := req.HandleBody[payload.TokenRequestRole](&w, r)
 		if err != nil {
-			log.Println("GetTokenByRole функция HandleBody вернула nill", err)
+			log.Println("GetTokenByRole функция HandleBody вернула nil", err)
 			return
 		}
-		tokenStr, err := userHandler.GetToken((*body), Role)
+		tokenStr, err := userHandler.UserService.GetToken((*body).Role)
 		if err != nil {
 			log.Println("GetTokenByRole", err)
 			return
@@ -65,7 +65,7 @@ func (UserHandler *UserHandler) GetTokenByRole() http.HandlerFunc {
 		tokenFormatJson := &payload.TokenResponse{
 			Token: tokenStr,
 		}
-		req.JsonResponse(&w, &tokenStr)
+		req.JsonResponse(&w, tokenFormatJson)
 	}
 }
 

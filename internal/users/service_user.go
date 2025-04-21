@@ -2,40 +2,39 @@ package users
 
 import (
 	"avitotes/config"
-	payload "avitotes/interal/dto/payloadError"
+	"avitotes/internal/dto/payload"
 	"avitotes/pkg/jwt"
+	"context"
 	"fmt"
 	"log"
 )
 
-type UserService struct {
-	UserRepository *UserRepo
-	Config         *config.Config
+type UsersService struct {
+	UserRepo UserRepository // Интерфейс, а не конкретная реализация
+	Config   *config.Config
 }
 
-func NewUserService(repo *UserRepo, conf *config.Config) *UserService {
-	return &UserService{
-		UserRepository: repo,
-		Config:         conf,
+func NewUserService(repo UserRepository, conf *config.Config) *UsersService {
+	return &UsersService{
+		UserRepo: repo,
+		Config:   conf,
 	}
 }
 
-// Функция регистрации пользователя
-func (service *UserService) Register(email, password, role string) (*User, error) {
-	//реализовать валидацию email
-	//если пользователь с таким email уже есть, то ошибка
+// фунцкия регистарции пользователя
+func (service *UsersService) Register(ctx context.Context, email, password, role string) (*User, error) {
 	user := NewUser(email, password, role)
-	createdUser, err := service.UserRepository.Creat(user)
+	createdUser, err := service.UserRepo.CreateUser(ctx, user)
 	if err != nil {
-		log.Println("CreateUser:не удалось создать пользователя123")
+		log.Println("Register: не удалось создать пользователя")
 		return nil, err
 	}
 	return createdUser, nil
 }
 
 // функция авторизации пользователя
-func (service *UserService) Login(email, password string) (*payload.TokenResponse, error) {
-	user, err := service.UserRepository.FindUserByEmailPass(email, password)
+func (service *UsersService) Login(ctx context.Context, email, password string) (*payload.TokenResponse, error) {
+	user, err := service.UserRepo.FindUserByEmailPass(ctx, email, password)
 	if err != nil {
 		log.Println("Login", err)
 		return nil, err
@@ -51,8 +50,8 @@ func (service *UserService) Login(email, password string) (*payload.TokenRespons
 	return req, nil
 }
 
-// достать токен соответствующей роли
-func (service *UserService) GetToken(role string) (string, error) {
+// достать токен соответсвующей роли
+func (service *UsersService) GetToken(role string) (string, error) {
 	if role != "client" && role != "moderator" {
 		return "", nil
 	}

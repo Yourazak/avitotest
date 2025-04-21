@@ -2,47 +2,69 @@ package pvz
 
 import (
 	"avitotes/config"
-	"avitotes/interal/dto/errorDto"
-	"avitotes/interal/dto/payloadError"
-	"avitotes/pkg/midware"
 	"avitotes/pkg/req"
-	"net/http"
+	"fmt"
+	"github.com/google/uuid"
+	"log"
+	"time"
 )
 
-type PvzHandlerDependency struct {
-	*PvzService
-	*config.Config
+type PvzService struct {
+	PVZRepo *PVZRepo
+	Config  *config.Config
 }
 
-type PvzHandler struct {
-	*PvzService
-	*config.Config
-}
-
-func (pvzHandler *PvzHandler) CreatePVZ() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		body, err := req.HandleBody[payload.PvzCreateRequest](&w, r)
-		if err != nil {
-			strError := "Ошибка возникла на этапе чтения из объекта Request. Тело ошибки"
-			errorDto.ShowResponseError(&w, strError, err, http.StatusBadRequest)
-			return
-		}
-		pvz, err := pvzHandler.PvzService.Register(body.Id, body.RegistrationDate, body.City)
-		if err != nil {
-			strError := "Ошибка возникла на этапе создания PVZ в базе данных.Тело ошибки"
-			errorDto.ShowResponseError(&w, strError, err, http.StatusBadRequest)
-			return
-		}
-		req.JsonResponse(&w, pvz)
+func NewPvzService(repo *PVZRepo, config *config.Config) *PvzService {
+	return &PvzService{
+		PVZRepo: repo,
+		Config:  config,
 	}
 }
 
-func NewPvzHandler(router *http.ServeMux, pvz *PvzHandlerDependency) *PvzHandler {
-	pvzHandler := &PvzHandler{
-		pvz.PvzService,
-		pvz.Config,
+func (pvz *PvzService) Register(id string, registrationDate string, city string) (*PVZ, error) {
+	// проверяем UUID если не передан
+	var uuidVal uuid.UUID
+	var err error
+
+	uuidVal, err = req.ParseUUIDOrGenerate(id)
+	if err != nil {
+		return nil, err
 	}
 
-	router.Handle("POST /pvz", midware.CheckRoleByToken(pvzHandler.CreatePVZ(), "TOKEN_MODERATOR"))
-	return pvzHandler
+	// обработка даты
+	var regTime time.Time
+	regTime, err = req.ParseTimeOrNow(registrationDate)
+	if err != nil {
+		return nil, err
+	}
+
+	newPvz := NewPVZ(uuidVal, regTime, city)
+	createdPVZ, err := pvz.PVZRepo.Create(newPvz)
+	if err != nil {
+		log.Printf("Error creating PVZ: %v", err)
+		return nil, err
+	}
+	return createdPVZ, nil
+}
+
+func (pvz *PvzService) ChangeStatusReceptionByPvzOnClose(id string) (*ReceptionForPvz, error) {
+	// проверяем UUID если не передан
+	var uuidVal uuid.UUID
+	var err error
+
+	uuidVal, err = req.ParsedUUIDPvz(id)
+	if err != nil {
+		return nil, fmt.Errorf("Некорректное значение id")
+	}
+	pvzStruct, err := pvz.PVZRepo.FindPVZById(uuidVal)
+	if err != nil {
+		return nil, fmt.Errorf("Нет pvz c таким значением")
+	}
+	fmt.Println("ID нашего PVZ", pvzStruct.ID)
+	recepForPvz, err := pvz.PVZRepo.UpdateStatus(pvzStruct.ID)
+	fmt.Println("uuidReception", recepForPvz, "err", err)
+	if err != nil {
+		return nil, fmt.Errorf("У данного pvzId: ", pvzStruct.ID, " нет приемок или она закрыта. Код ошибки: ", err)
+	}
+	return recepForPvz, nil
 }

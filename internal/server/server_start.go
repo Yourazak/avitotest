@@ -2,74 +2,75 @@ package server
 
 import (
 	"avitotes/config"
-	"avitotes/interal/pvz"
-	"avitotes/interal/reception"
-	"avitotes/interal/users"
+	"avitotes/internal/pvz"
+	"avitotes/internal/receptions"
+	"avitotes/internal/users"
+	"avitotes/pkg/repos"
 	"net/http"
 )
 
-func ServerStart(conf *config.Config, resp *users.UserRepo) {
+func ServerStart(conf *config.Config, reps *repos.AllRepository) {
 
-	//создаем пустой router
+	// 1. Создаем пустой router
 	router := http.NewServeMux()
 
-	//подключаем к router ручки для User
+	// 2. Подключаем к router ручки для User
 	ConnectHandlerForUser(router, conf, reps.UserRepo)
 
-	//подключаем к router ручки для PVZ
+	// 2.1. Подключаем к router ручки для PVZ
 	ConnectHandlerForPvz(router, conf, reps.PvzRepo)
 
-	//подключаем к ruoter ручки для Reception
+	// 2.2 Подключаем к router ручки для Reception
 	ConnectHandlerForReception(router, conf, reps.ReceptionRepo)
 
-	//передаем server наши ручки
+	// 5. Передаем server наши ручки
 	server := http.Server{
 		Addr:    ":8080",
 		Handler: router,
 	}
 
-	//запускаем server
+	// 6. Запускаем server
 	server.ListenAndServe()
 }
 
-func ConnectHandlerForReception(router *http.ServeMux, conf *config.Config, reps *pvzReceptionRepo) {
-	//подключаем сторонние service
-	receptionService := reception.NewReceptionService(reps, conf)
+func ConnectHandlerForReception(router *http.ServeMux, conf *config.Config, reps *receptions.ReceptionRepo) {
+	// 2. Подключаем сторонние service
+	receptionService := receptions.NewReceptionService(reps, conf)
 
-	//подключаем receptionHandDependency для Reception
-	receptionHandDepend := reception.ReceptionHandlerDependency{
+	// 3. Подключаем receptionHandDependency для Reception
+	receptionHandDepend := receptions.ReceptionHandlerDependency{
 		receptionService,
 		conf,
 	}
 
-	//подключаем ручки для Reception к router
+	// 4. Подключаем ручки Reception к router
 	receptions.NewReceptionHandler(router, &receptionHandDepend)
 }
 
 func ConnectHandlerForPvz(router *http.ServeMux, conf *config.Config, reps *pvz.PVZRepo) {
-	//подключаем сторонние service
-	pvzService := pvzNewPvzService(reps, conf)
+	// 2. Подключаем сторонние service
+	pvzService := pvz.NewPvzService(reps, conf)
 
-	//подлючаем pvzHandDependency для PVZ
-	pvzHandDepend := pvz.HandlerDependency{
+	// 3. Подключаем pvzHandDependency для PVZ
+	pvzHandDepend := pvz.PvzHandlerDependency{
 		pvzService,
 		conf,
 	}
 
-	//подключаем ручки PVZ к router
+	// 4. Подключаем ручки PVZ к router
 	pvz.NewPvzHandler(router, &pvzHandDepend)
 }
 
-func ConnectHandlerForUser(router *http.ServeMux, conf *config.Config, reps *users.UserRepo) {
-	//подключаем сторонние service
-	userService := user.NewUserSrvice(reps, conf)
+func ConnectHandlerForUser(router *http.ServeMux, conf *config.Config, repo *users.UserRepo) {
+	// 1. Инициализация сервиса пользователя
+	userService := users.NewUserService(repo, conf)
 
-	//подключаем userHandlerDependency для User
-	userHandDepend := users.UserHandlerDependency{
-		userService,
-		conf,
+	// 2. Создание зависимостей хендлера
+	handlerDeps := &users.UserHandlerDependency{
+		UserService: userService,
+		Config:      conf,
 	}
 
-	//подключаем ручки USERS к router
-	users.NewUserHandler(router, &userHandDepend)
+	// 3. Подключение маршрутов пользователя
+	users.NewUserHandler(router, handlerDeps)
 }

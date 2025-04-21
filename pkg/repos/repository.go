@@ -1,8 +1,9 @@
 package repos
 
 import (
-	"avitotes/interal/pvz"
-	"avitotes/interal/users"
+	"avitotes/internal/pvz"
+	"avitotes/internal/receptions"
+	"avitotes/internal/users"
 )
 
 type AllRepository struct {

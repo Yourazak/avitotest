@@ -1,12 +1,10 @@
 services:
   postgres:
-    container_name: postgres_go_v2
+    container_name: postgres_go_v1
     image: postgres:16.4
     environment:
-      POSTGRES_USER: admin_avito
-      POSTGRES_PASSWORD: no_wb_yes_avito
-      PGDATA: /data/postgres
-    volumes:
-      - ./postgres-data:/data/postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     ports:
       - "5433:5432"

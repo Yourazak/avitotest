@@ -1,14 +1,15 @@
 package midware
 
 import (
-	"avitotes/interal/dto/errorDto"
+	"avitotes/internal/dto/errorDto"
 	"avitotes/pkg/jwt"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 )
 
-func CheckPoleByToken(next http.Handler, strRole string) http.Handler {
+func CheckRoleByToken(next http.Handler, strRole string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		role, err := GetRoleFromToken(r, strRole)
 		if err != nil {
@@ -16,8 +17,8 @@ func CheckPoleByToken(next http.Handler, strRole string) http.Handler {
 			return
 		}
 
-		if role != "moderator" {
-			mgsErr := "Только пользователь с role moderator может создать PVZ"
+		if role != strRole {
+			mgsErr := "Только пользователь с ролью:" + role + "может внести изменения"
 			errorDto.ShowResponseError(&w, mgsErr, http.StatusForbidden)
 			return
 		}
@@ -29,13 +30,21 @@ func CheckPoleByToken(next http.Handler, strRole string) http.Handler {
 func GetRoleFromToken(r *http.Request, strRole string) (string, error) {
 	bearTokenAuth := r.Header.Get("Authorization")
 
-	if bearTokenAuth == "" || !string.HasPrefix(bearTokenAuth, "Bearer ") {
+	if bearTokenAuth == "" || !strings.HasPrefix(bearTokenAuth, "Bearer ") {
 		return "", fmt.Errorf("доступ запрещен: нет Bearer токена")
 	}
 
 	tokenString := bearTokenAuth[7:]
 
-	j := jwt.NewJWT(os.Getenv(strRole))
+	TokenStr := ""
+	switch strRole {
+	case "client":
+		TokenStr = "TOKEN_CLIENT"
+	case "moderator":
+		TokenStr = "TOKEN_MODERATOR"
+	}
+
+	j := jwt.NewJWT(os.Getenv(TokenStr))
 	role, err := j.ParseToken(tokenString)
 	if err != nil {
 		return "", fmt.Errorf("невалидный токен: %w", err)

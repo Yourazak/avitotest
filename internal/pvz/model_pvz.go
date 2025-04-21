@@ -11,10 +11,9 @@ type PVZ struct {
 	City             string    `json:"city"`
 }
 
-func NewPVZ(Id uuid.UUID, RegistrationDate time.Time, City string) *PVZ {
-	return &PVZ{
-		ID:               Id,
-		RegistrationDate: RegistrationDate,
-		City:             City,
-	}
+type ReceptionForPvz struct {
+	ID       uuid.UUID `json:"id"`
+	DateTime time.Time `json:"date_time"`
+	PvzID    uuid.UUID `json:"pvz_id"`
+	Status   string    `json:"status"` // enum: [in_progress, close]
 }

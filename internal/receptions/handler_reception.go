@@ -1,9 +1,9 @@
-package reception
+package receptions
 
 import (
 	"avitotes/config"
-	"avitotes/interal/dto/errorDto"
-	payload "avitotes/interal/dto/payloadError"
+	"avitotes/internal/dto/errorDto"
+	"avitotes/internal/dto/payload"
 	"avitotes/pkg/midware"
 	"avitotes/pkg/req"
 	"net/http"
@@ -20,7 +20,7 @@ type ReceptionHandler struct {
 }
 
 func NewReceptionHandler(router *http.ServeMux, recep *ReceptionHandlerDependency) *ReceptionHandler {
-	receptionHandler := &ReceptionHandler{
+	recepHandler := &ReceptionHandler{
 		recep.ReceptionService,
 		recep.Config,
 	}
@@ -28,7 +28,7 @@ func NewReceptionHandler(router *http.ServeMux, recep *ReceptionHandlerDependenc
 	return recepHandler
 }
 
-func (receptionHandler *ReceptionHandler) CreateReceptHandler() http.HandlerFunc {
+func (receHandler *ReceptionHandler) CreateReceptHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := req.HandleBody[payload.ReceptionCreateRequest](&w, r)
 		if err != nil {
@@ -36,10 +36,10 @@ func (receptionHandler *ReceptionHandler) CreateReceptHandler() http.HandlerFunc
 			errorDto.ShowResponseError(&w, strError, err, http.StatusBadRequest)
 			return
 		}
-		reception, err := receptionHandler.ReceptionService.CreateReception(body.PvzId)
+		reception, err := receHandler.ReceptionService.CreateReception(body.PvzId)
 		if err != nil {
-			strError := "Ошибка возникла на этапе создания reception в базе данных. Тело ошибки"
-			errorDto.ShowResponseError(&w, strError, err, http.StatusBadRequest)
+			strError := "Ошибка возникла на этапе создания reception в базе данных. Тело ошибки: " + err.Error()
+			errorDto.ShowResponseError(&w, strError, http.StatusBadRequest)
 			return
 		}
 		req.JsonResponse(&w, reception)

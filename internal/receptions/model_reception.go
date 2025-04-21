@@ -1,4 +1,4 @@
-package reception
+package receptions
 
 import (
 	"github.com/google/uuid"
@@ -14,8 +14,8 @@ type Reception struct {
 
 //required: [dataTime,pvzId,status]
 
-func NewReception(dataTime time.Time, pvzID uuid.UUID, status string) Reception {
-	return Reception{
+func NewReception(dataTime time.Time, pvzID uuid.UUID, status string) *Reception {
+	return &Reception{
 		DataTime: dataTime,
 		PvzID:    pvzID,
 		Status:   status,
